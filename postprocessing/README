@@ -1,0 +1,60 @@
+# Postprocessing Scripts Summary
+
+## Overview
+Collection of scripts for analyzing GC content, generating BED files, and managing batch processing pipelines for ChIP-seq analysis.
+
+---
+
+## Script List
+
+### 1. **calculate_GC_content.py**
+Calculates GC content percentage from a FASTA file. Iterates through sequences, counts G and C nucleotides, and outputs final GC percentage to a text file.
+
+### 2. **generategcscripts.sh**
+Generates batch SLURM job scripts for GC content analysis. Creates 200 individual job scripts per protein, each running the complete BED→FASTA→GC pipeline. Configurable protein list at the top.
+
+### 3. **generate_10bp_bed.py**
+Converts dyad position data to BED format with 10 bp windows (±5 bp around dyad center). Used for focused GC analysis around transcription factor binding sites.
+
+### 4. **generate_147bp_bed.py**
+Converts dyad position data to BED format with 147 bp nucleosome windows (±73-74 bp around dyad center). Generates standardized nucleosome coordinate ranges.
+
+### 5. **make_bed2fasta_pipeline_for_GC.py**
+Legacy script that generates individual shell scripts from a template. Each script runs the bed2fasta conversion pipeline for GC content analysis. Creates 200 scripts per template.
+
+### 6. **plotgc.py**
+Creates publication-quality GC content plots. Applies 7-element sliding window smoothing, reverses and averages data for symmetry, generates line plots with customized axes and labels.
+
+### 7. **run_bed2fasta_pipeline_for_GC.py**
+Batch job submission script that automatically finds and submits all matching shell scripts to SLURM queue. Uses regex pattern matching to identify job scripts.
+
+---
+
+## Data Flow
+
+```
+BED Files (dyad positions)
+    ↓
+generate_10bp_bed.py / generate_147bp_bed.py (Convert to coordinate ranges)
+    ↓
+bed2fasta (External tool: Convert BED to FASTA)
+    ↓
+calculate_GC_content.py (Calculate GC% for each region)
+    ↓
+plotgc.py (Visualize results)
+```
+
+## Typical Workflow
+
+1. **Job Generation**: `generategcscripts.sh` creates 200 SLURM jobs per protein
+2. **Job Submission**: `run_bed2fasta_pipeline_for_GC.py` submits all jobs to queue
+3. **Data Processing**: Each job executes BED→FASTA→GC calculation pipeline
+4. **Visualization**: `plotgc.py` generates GC content plots from results
+
+## Key Dependencies
+- Python 3.x
+- matplotlib (for plotting)
+- numpy (for data manipulation)
+- bed2fasta (external tool for BED to FASTA conversion)
+- SLURM (for cluster job submission)
+- spack (for environment management)

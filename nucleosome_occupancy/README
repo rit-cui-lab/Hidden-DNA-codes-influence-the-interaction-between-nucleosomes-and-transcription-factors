@@ -1,0 +1,102 @@
+# Nucleosome Occupancy Scripts Summary
+
+## Overview
+Collection of scripts for calculating nucleosome occupancy, processing MNase-seq data, visualizing profiles, and managing large-scale parallel processing workflows.
+
+---
+
+## Script List
+
+### 1. **calculatensm_multithread.py**
+Calculates nucleosome occupancy using Gaussian kernel smoothing with multiprocessing. Processes chromosome dyad data in parallel chunks with overlap regions for accurate edge calculations. Outputs bedGraph format.
+
+### 2. **calculate_occupancy_avg_and_normalize.py**
+Normalizes nucleosome occupancy scores by calculating average value and dividing all scores by that average. Maintains bedGraph format. Two-pass algorithm for accuracy.
+
+### 3. **convert_bw.sh**
+Generates SLURM job scripts for converting sorted bedGraph files to BigWig format. Creates one job script per cell line with sorting and deduplication steps.
+
+### 4. **convert_bwinvitro.sh**
+SLURM job script for converting in vitro nucleosome occupancy bedGraph to BigWig format. Handles in vitro-specific data workflows.
+
+### 5. **normalize_bedgraph.py**
+(Incomplete - has syntax error) Intended to normalize bedGraph files by dividing values by an average. Would need completion.
+
+### 6. **plotnucocc.py**
+Creates publication-quality nucleosome occupancy profile plots. Parses data files, applies smoothing, generates symmetrical profiles, and saves high-resolution PNG images. Supports customizable cell line selection.
+
+### 7. **sc_calculatensm_multithread.sh**
+Submits batch SLURM jobs for multithread NSM calculation. Processes chromosome files in parallel with configurable cores and memory. Extracts chromosome identifiers from filenames.
+
+### 8. **sc_invitronucocctfs.sh**
+Generates and submits SLURM jobs for in vitro nucleosome occupancy analysis. Matches MEME motif files with data files, runs FIMO, and generates occupancy profiles.
+
+### 9. **sc_nucocctfs.sh**
+Generates and submits SLURM jobs for nucleosome occupancy analysis with TF motifs. Performs BED→FASTA conversion, FIMO scanning, bedtools merging, and profile generation with computeMatrix/plotProfile.
+
+### 10. **sc_plotnucocc.sh**
+Generates SLURM job scripts for plotting nucleosome occupancy profiles. Scans nucleosome_occupancy directories for profile files and creates plotting jobs. Includes batch submission script.
+
+### 11. **slurmcallnormalizemnasedata_all.sh**
+Batch SLURM job submission script for normalizing MNase data across multiple cell lines. Creates and submits one job per cell line for occupancy normalization.
+
+### 12. **slurmcallsplitdyadfiles.sh**
+SLURM job submission script for splitting dyad files by chromosome. Processes multiple cell lines (HepG2, IMR90, MCF-7). Creates chromosome-specific files for parallel processing.
+
+### 13. **slurmcall_concatnsm.sh**
+Concatenates chromosome-specific occupancy files into single BigWig-ready file. Combines chr1-22, chrX, and chrY outputs and compresses intermediate files.
+
+### 14. **splitdyadfiles.sh**
+Splits dyad position files by chromosome. Creates separate files for chr1-22, chrX, and chrY. Removes empty chromosome files. Used to parallelize occupancy calculations.
+
+---
+
+## Data Flow
+
+```
+MNase SAM/BAM Files
+    ↓
+Extract Dyad Positions
+    ↓
+splitdyadfiles.sh (Organize by chromosome)
+    ↓
+calculatensm_multithread.py (Calculate occupancy with parallel processing)
+    ↓
+slurmcall_concatnsm.sh (Concatenate chromosome results)
+    ↓
+calculate_occupancy_avg_and_normalize.py (Normalize scores)
+    ↓
+convert_bw.sh (Convert to BigWig)
+    ↓
+sc_nucocctfs.sh / sc_plotnucocc.sh (Analysis & visualization)
+```
+
+## Typical Workflows
+
+### Standard Occupancy Analysis
+1. Split dyad files by chromosome
+2. Calculate occupancy for each chromosome in parallel
+3. Concatenate results
+4. Normalize occupancy values
+5. Convert to BigWig format
+6. Visualize with plots
+
+### TF-Centered Occupancy
+1. Use sc_nucocctfs.sh to match TF motifs with occupancy data
+2. FIMO scanning for TF binding sites
+3. computeMatrix for profile generation
+4. plotProfile for visualization
+
+### In Vitro Analysis
+1. Use sc_invitronucocctfs.sh for in vitro-specific workflows
+2. Similar steps to standard analysis but with in vitro data
+
+## Key Dependencies
+- Python 3.x with numpy
+- samtools
+- bedtools
+- deepTools (computeMatrix, plotProfile)
+- MEME suite (FIMO)
+- bedGraphToBigWig (external tool)
+- SLURM (for cluster job submission)
+- spack (for environment management)

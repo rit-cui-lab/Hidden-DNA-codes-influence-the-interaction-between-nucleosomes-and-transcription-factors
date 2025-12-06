@@ -1,0 +1,61 @@
+# Preprocessing Scripts Summary
+
+## Overview
+Collection of scripts for processing MNase-seq and ChIP-seq data, managing protein motif files, and comparing datasets.
+
+---
+
+## Script List
+
+### 1. **compareproteins.sh**
+Compares protein datasets between two directories by analyzing .meme files. Identifies proteins present in both folders, only in folder 1, and only in folder 2. Generates summary statistics.
+
+### 2. **count_dyads.py**
+Counts and aggregates dyad positions from a tab-separated input file. Groups by chromosome and dyad position, outputting frequency counts sorted numerically by dyad position.
+
+### 3. **filtersamfiles.sh**
+Filters SAM files based on insert size (120-180 bp range). Converts SAM to BAM format, sorts, and indexes. Removes original SAM files to save space. SLURM job submission script.
+
+### 4. **generate_147bp_bed.py**
+Converts dyad position data to BED format with 147 bp nucleosome windows (±73-74 bp around dyad center). Generates standardized nucleosome coordinate ranges.
+
+### 5. **generate_dyad_files_samfiles.sh**
+Extracts dyad positions from paired-end SAM files. Calculates dyad coordinates from insert size and alignment start position. SLURM job submission script.
+
+### 6. **generate_dyad_files_samfiles_singleended.sh**
+Extracts dyad positions from single-ended SAM files. Handles both forward (flag=0) and reverse (flag=16) strand reads with appropriate position adjustments. SLURM job submission script.
+
+### 7. **processfactorbook.py**
+Processes MEME motif files using ENCSR-to-protein mappings from a TSV file. Filters motifs by target protein list and optionally by biosample type. Generates separate MEME files for each protein found.
+
+### 8. **processmemefiles.py**
+Extracts and organizes MEME motifs by protein name. Creates individual MEME files for each target protein with standardized naming convention. Tracks found and missing proteins.
+
+### 9. **removesharedmemes.sh**
+Compares protein datasets between two folders and removes .meme files from folder 2 if the same protein exists in folder 1. Includes user confirmation before deletion.
+
+### 10. **renamebedfiles.sh**
+Renames ChIP-seq BED files based on experiment target metadata. Reads TSV metadata file to match file IDs with experiment targets, strips "-human" suffix, and renames files accordingly.
+
+### 11. **slurmcall_count_dyads.sh**
+SLURM job submission wrapper for count_dyads.py. Configures computational resources and calls the Python script on dyad count files.
+
+### 12. **slurmcall_processmemefiles_all.sh**
+Batch job submission script that generates individual SLURM jobs for processing multiple MEME files. Creates output directories and submits jobs for each MEME file in a directory.
+
+---
+
+## Data Flow
+
+```
+SAM Files → Filter → Extract Dyads → Count Dyads → Generate BED
+    ↓
+MEME Files → Process/Filter → Organize by Protein → Compare Datasets
+    ↓
+ChIP-seq Files → Rename by Metadata
+```
+
+## Key Dependencies
+- samtools (for SAM/BAM processing)
+- Python 3.x (for data processing scripts)
+- SLURM (for cluster job submission)
