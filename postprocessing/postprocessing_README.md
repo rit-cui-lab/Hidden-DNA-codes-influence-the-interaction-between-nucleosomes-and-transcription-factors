@@ -11,16 +11,16 @@ Generates GC content profiles around transcription factor binding sites using th
 
 | File | Description |
 |------|-------------|
-| **calculate_GC_content.py** | Calculates GC content percentage from a FASTA file. Counts G and C nucleotides across all sequences and outputs a single value. |
-| **generate_10bp_bed.py** | Converts dyad positions to BED format with 10 bp windows (±5 bp around each dyad). Used for focused GC analysis around TF centers. |
-| **generate_147bp_bed.py** | Converts dyad positions to BED format with 147 bp nucleosome windows (±73–74 bp). Duplicate of the preprocessing version; kept here so postprocessing is self-contained. |
-| **plotgc.py** | Creates publication-quality GC content plots. Applies 7-element sliding window smoothing and generates symmetrized profiles. |
+| **calculate_GC_content.py** | Calculates GC content percentage from a FASTA file. |
+| **generate_10bp_bed.py** | Converts dyad positions to BED format with 10 bp windows (±5 bp). |
+| **generate_147bp_bed.py** | Converts dyad positions to BED format with 147 bp nucleosome windows. Duplicate of the preprocessing version, kept here so the folder is self-contained. |
+| **plotgc.py** | Creates publication-quality GC content plots with smoothing and symmetrization. |
 
 ### Bash / SLURM Scripts
 
 | File | Description |
 |------|-------------|
-| **generategcscripts.sh** | Generates 200 per-bin SLURM job scripts for each configured protein. Each generated job runs the BED→FASTA→GC pipeline on one bin. |
+| **generategcscripts.sh** | Generates 200 per-bin SLURM job scripts for each configured protein. Each script runs the BED→FASTA→GC pipeline on one bin. |
 
 ---
 
@@ -42,13 +42,45 @@ plotgc.py                      (smoothed, symmetrized profile plot)
 
 ---
 
+## Inputs
+
+### `generate_10bp_bed.py` / `generate_147bp_bed.py`
+Three-column BED of dyad positions (output of dnps Part 2). A real demo set is at [`demo/input/dnps_intermediates/`](../demo/input/dnps_intermediates/).
+
+```
+chr22	10510092	10510092
+chr22	10510213	10510213
+```
+
+### `calculate_GC_content.py`
+A FASTA file produced by `bed2fasta` from the 10 bp window BED.
+
+```
+>chr22:10510087-10510097
+ACGTACGTAC
+```
+
+### `plotgc.py`
+A plain-text file with one GC fraction per line (200 lines for a full ±1000 bp profile).
+
+```
+0.42
+0.43
+0.45
+```
+
+### `generategcscripts.sh`
+A configured `CELL_LINE` and `PROTEINS_TO_PROCESS` list at the top of the script, plus completed dnps Part 2 output for each protein.
+
+---
+
 ## Usage
 
 ### Generate per-protein GC analysis jobs
 
 ```bash
 # 1. Edit CELL_LINE and PROTEINS_TO_PROCESS at the top of generategcscripts.sh
-bash generategcscripts.sh
+bash postprocessing/generategcscripts.sh
 
 # 2. Submit the generated jobs
 for script in ./chipseq/dNPS/<CELL_LINE>/<PROTEIN>_*/job_scripts/*.sh; do
@@ -56,25 +88,14 @@ for script in ./chipseq/dNPS/<CELL_LINE>/<PROTEIN>_*/job_scripts/*.sh; do
 done
 
 # 3. Plot results for one TF
-python plotgc.py <PROTEIN>_GC_aggregated.txt <output.png> <PROTEIN>
+python postprocessing/plotgc.py <PROTEIN>_GC_aggregated.txt <output.png> <PROTEIN>
 ```
 
-`generategcscripts.sh` creates 200 SLURM scripts per protein in `<protein_dir>/job_scripts/`. Each script handles one of the 200 bins, so a full protein analysis submits 200 jobs. Aggregate the per-bin GC values into a single file before running `plotgc.py`.
+### Demo
 
-Edit the `#SBATCH` account/partition/email lines in `generategcscripts.sh` for your cluster before submitting.
-
----
-
-## Inputs and Outputs
-
-**Inputs**
-- `final_best_site_sorted_unique_{1..200}.bed` per protein (from `dnps/` Part 2)
-- Reference genome FASTA (`hg38.fa`)
-
-**Outputs**
-- `<protein>_best_site_sorted_unique_{1..200}_GC.bed.fa` — per-bin FASTA sequences
-- `<protein>_best_site_sorted_unique_{1..200}_GC.txt` — per-bin GC fractions
-- `<protein>_GC_plot.png` — smoothed symmetric GC profile (via `plotgc.py`)
+```bash
+bash postprocessing/run_demo.sh demo/input demo/output/postprocessing
+```
 
 ---
 

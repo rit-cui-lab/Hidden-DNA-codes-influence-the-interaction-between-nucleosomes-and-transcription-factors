@@ -11,24 +11,24 @@ Computes genome-wide nucleosome occupancy from dyad position counts using Gaussi
 
 | File | Description |
 |------|-------------|
-| **calculatensm_multithread.py** | Computes nucleosome occupancy from dyad positions using a Gaussian kernel (σ = 20 bp, window ±73 bp). Uses `multiprocessing` to process chromosome chunks in parallel with overlap regions for accurate edges. Outputs bedGraph. |
-| **calculate_occupancy_avg_and_normalize.py** | Normalizes occupancy by calculating the mean and dividing every score by it. Two-pass algorithm over the bedGraph. |
-| **normalize_bedgraph.py** | Duplicate of `calculate_occupancy_avg_and_normalize.py` retained for compatibility with alternate bedGraph formats. Prefer `calculate_occupancy_avg_and_normalize.py` for new work. |
-| **plotnucocc.py** | Creates nucleosome occupancy profile plots. Parses deepTools `plotProfile` output, applies smoothing, symmetrizes, and saves high-resolution PNG. Cell line selectable via CLI. |
+| **calculatensm_multithread.py** | Computes nucleosome occupancy from dyad positions using a Gaussian kernel (σ = 20 bp, window ±73 bp). Outputs bedGraph. |
+| **calculate_occupancy_avg_and_normalize.py** | Normalizes occupancy by calculating the mean and dividing every score by it. |
+| **normalize_bedgraph.py** | Duplicate of `calculate_occupancy_avg_and_normalize.py` retained for compatibility. Prefer `calculate_occupancy_avg_and_normalize.py` for new work. |
+| **plotnucocc.py** | Creates nucleosome occupancy profile plots from deepTools `plotProfile` output. |
 
 ### Bash / SLURM Scripts
 
 | File | Description |
 |------|-------------|
-| **splitdyadfiles.sh** | Splits a full-genome dyad count file into per-chromosome files (chr1–22, chrX, chrY) for parallel downstream processing. |
-| **sc_calculatensm_multitread.sh** | Batch SLURM submission for `calculatensm_multithread.py` across per-chromosome files. |
-| **slurmcall_concatnsm.sh** | Concatenates per-chromosome occupancy bedGraphs into a single genome-wide file and compresses intermediates. |
+| **splitdyadfiles.sh** | Splits a full-genome dyad count file into per-chromosome files. |
+| **sc_calculatensm_multitread.sh** | Batch SLURM submission for `calculatensm_multithread.py`. |
+| **slurmcall_concatnsm.sh** | Concatenates per-chromosome occupancy bedGraphs into one genome-wide file. |
 | **slurmcallnormalizemnasedata_all.sh** | Batch SLURM submission for `calculate_occupancy_avg_and_normalize.py` across multiple cell lines. |
-| **convert_bw.sh** | Generates per-cell-line SLURM jobs that sort, deduplicate, and convert the normalized bedGraph to BigWig via `bedGraphToBigWig`. |
-| **convert_bwinvitro.sh** | Single-job variant of `convert_bw.sh` for the in vitro MNase-seq dataset. |
-| **sc_nucocctfs.sh** | Generates and submits SLURM jobs for TF-centered occupancy analysis. For each MEME motif: BED→FASTA, FIMO motif scanning, bedtools merge, deepTools `computeMatrix` + `plotProfile`. |
-| **sc_invitronucocctfs.sh** | In vitro variant of `sc_nucocctfs.sh`. Uses pre-computed in vitro BigWig and skips the FIMO step (reuses in vivo `best_site_sorted_unique.bed`). |
-| **sc_plotnucocc.sh** | Generates per-TF SLURM jobs that call `plotnucocc.py` on the deepTools `.tab` profile output. |
+| **convert_bw.sh** | Per-cell-line SLURM jobs that sort, deduplicate, and convert the normalized bedGraph to BigWig. |
+| **convert_bwinvitro.sh** | In vitro variant of `convert_bw.sh`. |
+| **sc_nucocctfs.sh** | Per-MEME-motif SLURM jobs for TF-centered occupancy. |
+| **sc_invitronucocctfs.sh** | In vitro variant of `sc_nucocctfs.sh`. |
+| **sc_plotnucocc.sh** | Per-TF SLURM jobs that call `plotnucocc.py` on the deepTools `.tab` profile output. |
 
 ---
 
@@ -49,14 +49,45 @@ convert_bw.sh                            (bedGraph → BigWig)
     ↓
 Normalized BigWig → consumed by dnps/ and TF-centered analysis below
 
-TF-centered analysis (uses the normalized BigWig above plus MEME files):
+TF-centered analysis:
     ↓
 sc_nucocctfs.sh                          (per-TF FIMO + computeMatrix + plotProfile)
     ↓
-Per-TF profile .tab + .png files
-    ↓
 sc_plotnucocc.sh → plotnucocc.py         (publication-quality plots)
 ```
+
+---
+
+## Inputs
+
+### `splitdyadfiles.sh` / `calculatensm_multithread.py`
+Three-column TSV: chromosome, position, count (output of `preprocessing/count_dyads.py`). Real example: [`demo/input/HepG2_dyads_chr22.txt`](../demo/input/HepG2_dyads_chr22.txt).
+
+```
+chr22	10510092	2
+chr22	10510213	1
+```
+
+### `calculate_occupancy_avg_and_normalize.py` / `normalize_bedgraph.py`
+Four-column bedGraph: chromosome, start, end, score. Real example: [`demo/input/HepG2_chr22.bg`](../demo/input/HepG2_chr22.bg).
+
+```
+chr22	10510091	10510092	1.0
+chr22	10510212	10510213	1.0026025852527254
+```
+
+### `convert_bw.sh`
+The normalized bedGraph from the previous step plus a `hg38.chrom.sizes` file. Calls UCSC `bedGraphToBigWig`.
+
+### `sc_nucocctfs.sh` / `sc_invitronucocctfs.sh`
+A directory of per-TF MEME files, a directory of matching ENCODE ChIP-seq `.bed.gz` files, and a cell line name. Real examples: [`demo/input/CTCF_HUMAN_HOCOMOCOv11.meme`](../demo/input/CTCF_HUMAN_HOCOMOCOv11.meme) and [`demo/input/CTCF_HepG2_chr22.bed`](../demo/input/CTCF_HepG2_chr22.bed).
+
+```
+chr22	41403749	41404213	.	1000	.	681.83507	-1.00000	5.16371	225
+```
+
+### `plotnucocc.py` / `sc_plotnucocc.sh`
+A `.tab` profile file from deepTools `plotProfile --outFileNameData`. First two lines are deepTools metadata; data lines are sample name followed by per-bin occupancy values.
 
 ---
 
@@ -65,51 +96,22 @@ sc_plotnucocc.sh → plotnucocc.py         (publication-quality plots)
 ### Typical run order
 
 ```bash
-# 1. Split the dyad file by chromosome
-bash splitdyadfiles.sh <cell_line>_dyads_final.txt
-
-# 2. Calculate occupancy per chromosome (edit CELL_LINE at the top first)
-bash sc_calculatensm_multitread.sh <dir_of_per_chr_files>
-
-# 3. Concatenate chromosome outputs
-sbatch slurmcall_concatnsm.sh
-
-# 4. Normalize
-bash slurmcallnormalizemnasedata_all.sh
-
-# 5. Convert to BigWig
-bash convert_bw.sh
-
-# 6. TF-centered analysis
-bash sc_nucocctfs.sh <meme_dir> <bed_dir> <cell_line>
-bash sc_invitronucocctfs.sh <meme_dir> <bed_dir> in_vitro
-
-# 7. Final plots
-bash sc_plotnucocc.sh
+bash nucleosome_occupancy/splitdyadfiles.sh HepG2_dyads_final.txt
+bash nucleosome_occupancy/sc_calculatensm_multitread.sh per_chr_dir/
+sbatch nucleosome_occupancy/slurmcall_concatnsm.sh
+bash nucleosome_occupancy/slurmcallnormalizemnasedata_all.sh
+bash nucleosome_occupancy/convert_bw.sh
+bash nucleosome_occupancy/sc_nucocctfs.sh <meme_dir> <bed_dir> <cell_line>
+bash nucleosome_occupancy/sc_plotnucocc.sh
 ```
 
-Edit the `CELL_LINE` variable, `#SBATCH` account/partition/email lines, and any hardcoded paths (e.g., `hg38.chrom.sizes`, `bedGraphToBigWig` location) in each script before submitting.
+Edit the `CELL_LINE` variable, `#SBATCH` account/partition/email lines, and any hardcoded paths in each script before submitting.
 
----
+### Demo
 
-## Inputs and Outputs
-
-**Inputs**
-- Dyad count files (`<cell_line>_dyads_final.txt`) from `preprocessing/`
-- Per-TF MEME files from `preprocessing/`
-- ChIP-seq BED files (`.bed.gz`) from ENCODE
-- Reference genome (`hg38.fa`) and chromosome sizes (`hg38.chrom.sizes`)
-- In vitro MNase-seq BigWig (for in vitro analysis)
-
-**Outputs**
-- Per-chromosome smoothed occupancy bedGraphs
-- Genome-wide concatenated, normalized bedGraph: `<cell_line>_nuc_occ_normalized.bg`
-- BigWig version: `<cell_line>.bw`
-- Per-TF directories under `chipseq/nucleosome_occupancy/<cell_line>/<tf>_<db>/` containing:
-  - `best_site_sorted_unique.bed` — merged unique motif hit coordinates
-  - `<tf>_<db>_best_site_score.gz` — deepTools matrix
-  - `<tf>_<db>_best_score_nsm_profile.tab` — profile data (consumed by `dnps/` and `plotnucocc.py`)
-  - `<cell_line>_hg38_<tf>_<db>_best_score_nsm_profile.png` — profile plot
+```bash
+bash nucleosome_occupancy/run_demo.sh demo/input demo/output/nucleosome_occupancy
+```
 
 ---
 
