@@ -91,6 +91,45 @@ A `.tab` profile file from deepTools `plotProfile --outFileNameData`. First two 
 
 ---
 
+## Outputs
+
+### `splitdyadfiles.sh`
+One per-chromosome TSV per chromosome present in the input (`split_<input>_chr1.txt` through `split_<input>_chrY.txt`). Same three-column format as the input.
+
+### `calculatensm_multithread.py`
+A four-column bedGraph (`<input>.bg`): chromosome, start, end, Gaussian-smoothed occupancy score. Real example: [`demo/input/HepG2_chr22.bg`](../demo/input/HepG2_chr22.bg).
+
+```
+chr22	10510091	10510092	1.0
+chr22	10510212	10510213	1.0026025852527254
+```
+
+### `slurmcall_concatnsm.sh`
+A single concatenated bedGraph (`<cell_line>.bg`) covering chr1–22, chrX, and chrY (when present). Per-chromosome inputs are gzipped after concatenation.
+
+### `calculate_occupancy_avg_and_normalize.py` / `normalize_bedgraph.py`
+A normalized bedGraph (path passed as second argument). Same format as input but each score divided by the genome-wide mean. Values near 1.0 indicate average density; > 1.0 nucleosome-rich; < 1.0 depleted. Real example: first 100 lines at [`demo/expected/HepG2_chr22_smoothed.head.bg`](../demo/expected/HepG2_chr22_smoothed.head.bg).
+
+```
+chr22	10510091	10510092	0.13395511430071882
+chr22	10510212	10510213	0.13430374390572503
+```
+
+### `convert_bw.sh` / `convert_bwinvitro.sh`
+A BigWig file (`<cell_line>.bw`) plus a sorted-deduplicated bedGraph intermediate (`sorted_unique.bg`).
+
+### `sc_nucocctfs.sh` / `sc_invitronucocctfs.sh`
+Per TF, in `nucleosome_occupancy/<cell_line>/<tf>_<db>/`:
+- `best_site_sorted_unique.bed` — merged unique motif-hit coordinates (consumed by `dnps/`)
+- `<tf>_<db>_best_site_score.gz` — deepTools matrix
+- `<tf>_<db>_best_score_nsm_profile.tab` — profile data (consumed by `dnps/` and `plotnucocc.py`)
+- `<cell_line>_hg38_<tf>_<db>_best_score_nsm_profile.png` — profile plot
+
+### `plotnucocc.py`
+A PNG (`<tf>_<db>_<cell_line>_<symmetrical|original>_<smoothed>.png`) showing the smoothed nucleosome occupancy profile.
+
+---
+
 ## Usage
 
 ### Typical run order

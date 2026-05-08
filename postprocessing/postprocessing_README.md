@@ -74,6 +74,38 @@ A configured `CELL_LINE` and `PROTEINS_TO_PROCESS` list at the top of the script
 
 ---
 
+## Outputs
+
+### `generate_10bp_bed.py`
+A BED file (`<input>_10bp.bed`) where each row spans 10 bp around the dyad.
+
+```
+chr22	10510087	10510097
+chr22	10510208	10510218
+```
+
+### `generate_147bp_bed.py`
+A BED file (`<input>_147bp.bed`) where each row spans 147 bp around the dyad.
+
+```
+chr22	10510018	10510165
+```
+
+### `calculate_GC_content.py`
+A single-line file with a single GC fraction (passed as second argument).
+
+```
+0.43
+```
+
+### `plotgc.py`
+A PNG plot of GC content vs distance from TF center, with sliding-window smoothing and symmetrization. Real example: [`demo/expected/CTCF_chr22_GC.png`](../demo/expected/CTCF_chr22_GC.png).
+
+### `generategcscripts.sh`
+200 SLURM job scripts in `<protein_dir>/job_scripts/` per configured protein. Each script runs the full BED→FASTA→GC pipeline for one bin.
+
+---
+
 ## Usage
 
 ### Generate per-protein GC analysis jobs

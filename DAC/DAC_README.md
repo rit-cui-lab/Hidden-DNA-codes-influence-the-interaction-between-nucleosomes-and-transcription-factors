@@ -49,6 +49,24 @@ Per-chromosome dyad count files in the working directory, named `chr{1..22,X}_hu
 
 ---
 
+## Outputs
+
+### `auto_correlation_multiple_new4_corrected_new.pl`
+Two-column TSV (path passed as third argument): distance in bp (0–1000), summed correlation count. Distance 0 dominates (self-pairs); biologically meaningful peaks appear near 147, 294, and 441 bp (nucleosome repeat length and multiples). Real example: [`demo/expected/CTCF_HepG2_chr22_DAC.txt`](../demo/expected/CTCF_HepG2_chr22_DAC.txt).
+
+```
+0	28624
+1	4260
+2	3789
+3	3590
+4	3453
+```
+
+### `my_prog_auto_correlation_1000.sh`
+One auto-correlation file per chromosome, named `chr{N}_..._auto_correlation.txt`. Same two-column TSV format as above.
+
+---
+
 ## Usage
 
 ### Single chromosome (manual)

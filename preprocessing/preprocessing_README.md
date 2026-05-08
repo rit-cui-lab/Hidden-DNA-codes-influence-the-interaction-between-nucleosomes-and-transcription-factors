@@ -89,6 +89,44 @@ A folder of `.bed.gz` files plus a `metadata.tsv` from ENCODE in the same folder
 
 ---
 
+## Outputs
+
+### `filtersamfiles.sh`
+A filtered SAM (`filtered_<name>.sam`), an unfiltered sorted indexed BAM (`<name>_sorted.bam` + `.bai`), and an unsorted BAM (`<name>.bam`). Original SAM is removed to save space.
+
+### `generate_dyad_files_samfiles.sh` / `generate_dyad_files_samfiles_singleended.sh`
+Two-column TSV (`<name>_dyads.txt`): chromosome, dyad position. One line per read.
+
+```
+chr22	10510092
+chr22	10510092
+chr22	10510213
+```
+
+### `count_dyads.py`
+Three-column TSV (`<input>_final.txt`): chromosome, dyad position, count. Sorted by position. Real example: first 100 lines at [`demo/expected/HepG2_dyads_chr22_counts.head.txt`](../demo/expected/HepG2_dyads_chr22_counts.head.txt).
+
+```
+chr22	10510092	2
+chr22	10510213	1
+chr22	10510282	1
+```
+
+### `generate_147bp_bed.py`
+Three-column BED (`<input>_147bp.bed`): chromosome, start (dyad − 74), end (dyad + 73).
+
+```
+chr22	10510018	10510165
+```
+
+### `processmemefiles.py` / `processfactorbook.py`
+One MEME file per target protein (`<protein>_HUMAN_<source>.meme`), plus two summary files: `proteins_found.txt` and `remaining_proteins.txt`.
+
+### `renamebedfiles.sh`
+Renames in place. Each `.bed.gz` becomes `<TF>-<original_id>.bed.gz` based on the metadata.
+
+---
+
 ## Usage
 
 ### Typical run order

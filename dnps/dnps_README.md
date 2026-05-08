@@ -93,6 +93,63 @@ A TF list file (one TF and meme name per line, space-separated) and a TF-to-prof
 
 ---
 
+## Outputs
+
+### `binning_bed.py` (Part 1)
+200 BED files per TF, named `<tf>_<cell_line>_best_site_sorted_unique_<i>.bed` for *i* = 1..200. Each file contains the TF binding sites translated to one 10 bp window at the bin's offset.
+
+```
+chr22	41402983	41402992
+chr22	42090033	42090042
+```
+
+### `callpipeline2.sh` (Part 2)
+200 BED files per TF, named `final_best_site_sorted_unique_<i>.bed`, containing only the dyads that fall within each bin's windows. Real examples (bins 90–110) at [`demo/input/dnps_intermediates/`](../demo/input/dnps_intermediates/).
+
+```
+chr22	41403960	41403969	chr22	41403965	41403966	1.0
+```
+
+### `generate_147bp_bed.py` (Part 3)
+A BED file (`<input>_147bp.bed`) where each row spans 147 bp around the dyad.
+
+```
+chr22	10510018	10510165
+chr22	10510139	10510286
+```
+
+### `bed2fasta` (Part 3, external tool)
+A FASTA file with one 147 bp sequence per nucleosome.
+
+```
+>chr22:10510018-10510165
+ACGTACGTACGT...
+```
+
+### `separate_nucleosomes.pl` (Part 3)
+A single-line file with four tab-separated integers — counts of nucleosomes classified as type 1, 2, 3, and 4 respectively. ΔNPS = (type1 − type4) / total × 100.
+
+```
+89	49	38	87
+```
+
+### `makeavgdnpsprofile.py`
+A PNG plot (`<cell_line>_<profile>_average_nsm_occ_deltaNPS_profile.png`) with three y-axes (in vivo, ΔNPS, in vitro) plus a smoothed ΔNPS data file (`<cell_line>_<profile>_average_deltaNPS_profile_smoothed.txt`, 200 floats, one per line).
+
+### `makeindividualplots.py`
+A per-TF PNG plot. Also appends to a `tfs_without_invitro.txt` log when in vitro data is missing.
+
+### dnps demo
+A diffable TSV (`CTCF_dnps_demo.tsv`) plus a reference plot (`CTCF_dnps_demo.png`). Real examples at [`demo/expected/CTCF_dnps_demo.tsv`](../demo/expected/CTCF_dnps_demo.tsv) and [`demo/expected/CTCF_dnps_demo.png`](../demo/expected/CTCF_dnps_demo.png).
+
+```
+bin	distance_bp	type1	type2	type3	type4	total	delta_NPS_pct
+90	-110	115	77	52	119	363	-1.101928
+91	-100	86	63	45	93	287	-2.439024
+```
+
+---
+
 ## Profile Categories
 
 TFs are classified into five profile types based on the shape of their in vivo vs in vitro occupancy:
@@ -125,7 +182,7 @@ Edit the `CONFIGURATION` block at the top of each script (BASE_DIR, EMAIL, ACCOU
 bash dnps/run_demo.sh demo/input demo/output/dnps
 ```
 
-Demo runs Part 3 only on 21 pre-computed bins (90–110) and produces a diffable TSV (`CTCF_dnps_demo.tsv`) plus a reference plot.
+Demo runs Part 3 only on 21 pre-computed bins (90–110) and produces a diffable TSV plus a reference plot.
 
 ---
 
